@@ -1,0 +1,324 @@
+* {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 24px;
+            background: #111;
+            color: #eee;
+            font-family: Arial, sans-serif;
+        }
+
+        button {
+            font: inherit;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.4;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin: 0;
+        }
+
+        h2 {
+            font-size: 18px;
+            margin: 0 0 12px;
+        }
+
+        p {
+            line-height: 1.5;
+        }
+
+        .muted {
+            color: #999;
+        }
+
+        .button {
+            padding: 10px 16px;
+            border: 1px solid #888;
+            border-radius: 4px;
+            background: #eee;
+            color: #111;
+            font-weight: bold;
+        }
+
+        .button:hover:not(:disabled) {
+            background: white;
+        }
+
+        .secondary-button {
+            background: #222;
+            color: white;
+        }
+
+        .secondary-button:hover:not(:disabled) {
+            background: #333;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .status-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .status-item {
+            background: #191919;
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 10px 14px;
+            min-width: 105px;
+        }
+
+        .status-label {
+            color: #999;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        .status-value {
+            display: block;
+            margin-top: 5px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .message {
+            padding: 13px;
+            margin-bottom: 16px;
+            border: 1px solid #555;
+            border-radius: 4px;
+            background: #1b1b1b;
+            min-height: 45px;
+        }
+
+        .battle-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .panel {
+            border: 1px solid #444;
+            border-radius: 5px;
+            background: #181818;
+            padding: 14px;
+            min-width: 0;
+        }
+
+        .panel-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 12px;
+        }
+
+        .score {
+            font-size: 17px;
+            font-weight: bold;
+        }
+        /* #region CARDSTUFFS */
+        /* CARD GRID */
+
+        .card-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+            gap: 12px;
+            min-height: 125px;
+            align-content: start;
+        }
+
+
+        /* CARD */
+
+        .card {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+
+            width: 100%;
+            min-height: 220px;
+            aspect-ratio: 0.72 / 1;
+
+            padding: 10px;
+
+            background: #1b1b1b;
+            color: #eee;
+
+            border: 1px solid #444;
+            border-radius: 5px;
+
+            text-align: left;
+
+            transition: 0.15s ease;
+        }
+
+
+        /* CARD ID */
+
+        .card-id {
+            color: #777;
+            font-size: 9px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+
+        /* CARD NAME */
+
+        .card-name {
+            font-size: 14px;
+            font-weight: bold;
+
+            padding-bottom: 7px;
+            border-bottom: 1px solid #444;
+        }
+
+        /* CARD DESCRIPTION */
+
+        .card-description {
+            flex: 1;
+
+            color: #aaa;
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
+
+        /* CARD STATS */
+
+        .card-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 5px;
+
+            padding-top: 8px;
+            border-top: 1px solid #444;
+
+            font-size: 10px;
+        }
+
+        .card-stats > * {
+            font-weight: normal;
+        }
+
+        .card-stats strong {
+            color: white;
+            font-weight: bold;
+        }
+
+
+        /* INTERACTION */
+
+        button.card {
+            font: inherit;
+            cursor: pointer;
+        }
+
+        .card.playable:hover:not(:disabled) {
+            background: #242424;
+            border-color: #aaa;
+            transform: translateY(-3px);
+        }
+
+        .card.playable:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .card.playable:focus-visible {
+            outline: 2px solid white;
+            outline-offset: 3px;
+        }
+        /* #endregion */
+
+        .empty-state {
+            color: #777;
+            font-size: 13px;
+            padding: 10px 0;
+        }
+
+        .hand-panel {
+            margin-top: 14px;
+        }
+
+        .hand-heading {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .actions {
+            margin-top: 14px;
+        }
+
+        .lower-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-top: 14px;
+        }
+
+        .log-list {
+            max-height: 220px;
+            overflow-y: auto;
+            padding-left: 20px;
+            color: #aaa;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .rules {
+            color: #aaa;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 700px) {
+            body {
+                padding: 12px;
+            }
+
+            header {
+                align-items: flex-start;
+            }
+
+            .battle-grid,
+            .lower-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card-row {
+                grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
+            }
+        }

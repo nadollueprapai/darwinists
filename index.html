@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evolution Card Game</title>
+    <link rel="stylesheet" href="styles.css">
+    <style></style>
+</head>
+
+<body>
+
+<main class="container">
+
+    <header>
+        <div>
+            <h1>Evolution Card Game</h1>
+            <p class="muted">Five-turn battle prototype</p>
+        </div>
+
+        <button id="start-button" class="button">
+            Start Battle
+        </button>
+    </header>
+
+
+    <section id="game-area" class="hidden">
+
+        <!-- GAME INFORMATION -->
+
+        <div class="status-bar">
+
+            <div class="status-item">
+                <span class="status-label">Turn</span>
+                <strong id="turn-value" class="status-value">1 / 5</strong>
+            </div>
+
+            <div class="status-item">
+                <span class="status-label">Energy</span>
+                <strong id="energy-value" class="status-value">1</strong>
+            </div>
+
+            <div class="status-item">
+                <span class="status-label">Your deck</span>
+                <strong id="deck-value" class="status-value">0</strong>
+            </div>
+
+            <div class="status-item">
+                <span class="status-label">Your hand</span>
+                <strong id="hand-count" class="status-value">0</strong>
+            </div>
+
+            <div class="status-item">
+                <span class="status-label">Enemy deck</span>
+                <strong id="enemy-deck-value" class="status-value">0</strong>
+            </div>
+
+            <div class="status-item">
+                <span class="status-label">Enemy hand</span>
+                <strong id="enemy-hand-count" class="status-value">0</strong>
+            </div>
+
+        </div>
+
+
+        <div id="message" class="message">
+            Start a battle to begin.
+        </div>
+
+
+        <!-- BATTLE BOARDS -->
+
+        <div class="battle-grid">
+
+            <section class="panel">
+
+                <div class="panel-heading">
+                    <h2>Your species</h2>
+
+                    <div class="score">
+                        <span id="player-score">0</span> power
+                    </div>
+                </div>
+
+                <div id="player-board" class="card-row">
+                    <p class="empty-state">No traits played yet.</p>
+                </div>
+
+            </section>
+
+
+            <section class="panel">
+
+                <div class="panel-heading">
+                    <h2>Opponent</h2>
+
+                    <div class="score">
+                        <span id="enemy-score">0</span> power
+                    </div>
+                </div>
+
+                <div id="enemy-board" class="card-row">
+                    <p class="empty-state">No traits played yet.</p>
+                </div>
+
+            </section>
+
+        </div>
+
+
+        <!-- PLAYER HAND -->
+
+        <section class="panel hand-panel">
+
+            <div class="hand-heading">
+                <h2>Your hand</h2>
+                <span id="hand-help" class="muted">
+                    Select a card to play it.
+                </span>
+            </div>
+
+            <div id="player-hand" class="card-row">
+                <p class="empty-state">Your hand is empty.</p>
+            </div>
+
+            <div class="actions">
+                <button
+                    id="end-turn-button"
+                    class="button secondary-button"
+                    disabled
+                >
+                    End Turn
+                </button>
+            </div>
+
+        </section>
+
+
+        <!-- LOG AND RULES -->
+
+        <div class="lower-grid">
+
+            <section class="panel">
+                <h2>Battle log</h2>
+                <ol id="battle-log" class="log-list"></ol>
+            </section>
+
+            <section class="panel rules">
+
+                <h2>How to play</h2>
+
+                <p>
+                    Each battle lasts five turns.
+                    Your energy equals the current turn number.
+                </p>
+
+                <p>
+                    Play any number of cards you can afford,
+                    then end your turn.
+                </p>
+
+                <p>
+                    The opponent plays automatically.
+                    Cards remain on the board until destroyed.
+                </p>
+
+                <p>
+                    After turn five, the side with the highest
+                    total power wins.
+                </p>
+
+                <p>
+                    There is no maximum hand size.
+                </p>
+
+            </section>
+
+        </div>
+
+    </section>
+
+</main>
+<script src="cards.js"></script>
+<script src="game.js"></script>
+<script src="targeting.js"></script>
+<script src="effects.js"></script>
+
+</body>
+</html>
