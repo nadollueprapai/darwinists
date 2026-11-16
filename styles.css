@@ -201,13 +201,23 @@
             border-bottom: 1px solid #444;
         }
 
+        /* CARD QUOTE */
+
+        .card-quote {
+            flex: 1;
+
+            color: #aaa;
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
         /* CARD DESCRIPTION */
 
         .card-description {
             flex: 1;
 
             color: #aaa;
-            font-size: 11px;
+            font-size: 9px;
             line-height: 1.5;
         }
 

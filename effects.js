@@ -2,42 +2,87 @@
 // POWER CALCULATION
 // ==================================================
 function getScaleCount(effect, card, owner) {
-
-    const targets = selectTargets(
-        effect.countTargets,
-        {
-            owner,
-            opponent: owner === state.player
-                ? state.enemy
-                : state.player
+    switch (effect.scaleType) {
+        case "target_count": {
+            const targets = selectTargets(
+                effect.countTargets,
+                {
+                    owner,
+                    opponent: getOpponent(owner)
+                }
+            );
+            return targets.filter(target =>
+                !effect.excludeSelf ||
+                target.instanceId !== card.instanceId
+            ).length;
         }
-    );
-    return targets.filter(target =>
-        !effect.excludeSelf ||
-        target.card.instanceId !== card.instanceId
-    ).length;
+        case "target_power": {
+            const targets = selectTargets(
+                effect.countTargets,
+                {
+                    owner,
+                    opponent: getOpponent(owner)
+                }
+            );
 
+            const filteredTargets = targets.filter(target =>
+                !effect.excludeSelf ||
+                target.instanceId !== card.instanceId
+            );
+
+            return filteredTargets.reduce(
+                (total, target) =>
+                    total + getBaseCalculatedPower(target),
+                0
+            );
+        }
+        case "stat_count": {
+            const stat = state.stats[effect.stat];
+            if (typeof stat !== "number") {
+                console.warn(
+                    "Unknown scaling statistic:",
+                    effect.stat
+                );
+                return 0;
+            }
+
+            return stat;
+        }
+        default:
+            console.warn(
+                "Unknown scaling type:",
+                effect.scaleType
+            );
+            return 0;
+    }
+}
+
+function getBaseCalculatedPower(card) {
+    let power = card.basePower + card.powerModifier;
+
+    if (hasProtection(card, "power_protection")) {
+        return Math.max(card.basePower, power);
+    }
+
+    power += card.powerBoost;
+
+    return Math.max(0, power);
 }
 
 function getPower(card, owner) {
-    let power = card.basePower + card.powerModifier;
+    let power = getBaseCalculatedPower(card);
 
     for (const effect of card.effects) {
-
         if (
             effect.trigger === "ongoing" &&
             effect.type === "scale_power"
         ) {
-
             const count = getScaleCount(effect, card, owner);
-
             power += effect.amount * count;
-
         }
-
     }
-    return Math.max(0, power);
 
+    return power;
 }
 
 function getTotalPower(owner) {
@@ -54,57 +99,38 @@ function getTotalPower(owner) {
 // PROTECTION CHECKS
 // ==================================================
 
-function hasSelfProtection(card, protectionType) {
+function hasProtection(card, protectionType) {
 
-    return card.effects.some(effect =>
-
+    const protectionEffects = card.effects.filter(effect =>
         effect.trigger === "ongoing" &&
-
-        effect.type === protectionType &&
-
-        (!effect.target || effect.target === "self")
-
+        effect.type === protectionType
     );
 
+    for (const effect of protectionEffects) {
+
+        const protectedCards = selectTargets(
+            effect.target,
+            {
+                owner: card.owner,
+                opponent: getOpponent(card.owner)
+            }
+        );
+
+        if (protectedCards.includes(card)) {
+            return true;
+        }
+
+    }
+
+    return false;
 }
 
-
-function hasTeamProtection(owner, protectionType) {
-
-    return owner.activeCards.some(card =>
-
-        card.effects.some(effect =>
-
-            effect.trigger === "ongoing" &&
-
-            effect.type === protectionType &&
-
-            effect.target === "all_own"
-
-        )
-
-    );
-
+function isProtectedFromReduction(card) {
+    return hasProtection(card, "power_protection");
 }
 
-
-function isProtectedFromReduction(card, owner) {
-
-    return (
-        hasSelfProtection(card, "power_protection") ||
-        hasTeamProtection(owner, "power_protection")
-    );
-
-}
-
-
-function isProtectedFromDestruction(card, owner) {
-
-    return (
-        hasSelfProtection(card, "destruction_protection") ||
-        hasTeamProtection(owner, "destruction_protection")
-    );
-
+function isProtectedFromDestruction(card) {
+    return hasProtection(card, "destruction_protection");
 }
 
 
@@ -138,7 +164,9 @@ function removeActiveCard(owner, target) {
         return false;
     }
 
-    owner.destroyedCards.push(owner.activeCards.splice(index, 1)[0]);
+
+    moveTarget(target, "destroyed", "destroy");
+
 
     return true;
 
@@ -171,33 +199,25 @@ function effectDrawCards(effect, sourceCard, context) {
 
 function effectReducePower(effect, sourceCard, context) {
 
-    const targets = selectTargets(
-        effect.target,
-        context
-    );
+    const targets = selectTargets(effect.target, context);
 
     for (const target of targets) {
 
-        const { card, owner: targetOwner } = target;
-
-        if (isProtectedFromReduction(card, targetOwner)) {
-            log(`${card.name} resisted the power reduction.`);
+        if (isProtectedFromReduction(target, target.owner)) {
+            log(`${target.name} resisted the power reduction.`);
             continue;
         }
 
         const amount = Math.min(
             effect.amount,
-            getPower(card, targetOwner)
+            getPower(target, target.owner)
         );
 
-        card.powerModifier -= amount;
+        target.powerModifier -= amount;
 
-        log(`${card.name} lost ${amount} power.`);
-
+        log(`${target.name} lost ${amount} power.`);
     }
-
 }
-
 
 // ------------------------------------------
 // TRANSFER POWER
@@ -205,10 +225,7 @@ function effectReducePower(effect, sourceCard, context) {
 
 function effectTransferPower(effect, sourceCard, context) {
 
-    const targets = selectTargets(
-        effect.target,
-        context
-    );
+    const targets = selectTargets(effect.target, context);
 
     const target = targets[0];
 
@@ -217,23 +234,20 @@ function effectTransferPower(effect, sourceCard, context) {
         return;
     }
 
-    const { card, owner: targetOwner } = target;
-
-    if (isProtectedFromReduction(card, targetOwner)) {
-        log(`${card.name} resisted the power steal.`);
+    if (isProtectedFromReduction(target)) {
+        log(`${target.name} resisted the power steal.`);
         return;
     }
 
     const amount = Math.min(
         effect.amount,
-        getPower(card, targetOwner)
+        getPower(target, target.owner)
     );
 
-    card.powerModifier -= amount;
+    target.powerModifier -= amount;
     sourceCard.powerModifier += amount;
 
-    log(`${sourceCard.name} stole ${amount} power from ${card.name}.`);
-
+    log(`${sourceCard.name} stole ${amount} power from ${target.name}.`);
 }
 
 
@@ -243,10 +257,7 @@ function effectTransferPower(effect, sourceCard, context) {
 
 function effectDestroyCard(effect, sourceCard, context) {
 
-    const targets = selectTargets(
-        effect.target,
-        context
-    );
+    const targets = selectTargets(effect.target, context);
 
     const target = targets[0];
 
@@ -255,24 +266,20 @@ function effectDestroyCard(effect, sourceCard, context) {
         return;
     }
 
-    const { card, owner: targetOwner, zone } = target;
-
-    if (zone !== "active") {
-        log(`${card.name} cannot be destroyed from this zone yet.`);
+    if (target.zone !== "active") {
+        log(`${target.name} cannot be destroyed from this zone yet.`);
         return;
     }
 
-    if (isProtectedFromDestruction(card, targetOwner)) {
-        log(`${card.name} cannot be destroyed.`);
+    if (isProtectedFromDestruction(target)) {
+        log(`${target.name} cannot be destroyed.`);
         return;
     }
 
-    removeActiveCard(targetOwner, card);
+    moveTarget(target, "destroyed", "destroy");
 
-    log(`${card.name} was destroyed.`);
-
+    log(`${target.name} was destroyed.`);
 }
-
 
 // ------------------------------------------
 // HEAL POWER
@@ -280,20 +287,15 @@ function effectDestroyCard(effect, sourceCard, context) {
 
 function effectHealPower(effect, sourceCard, context) {
 
-    const targets = selectTargets(
-        effect.target,
-        context
-    );
+    const targets = selectTargets(effect.target, context);
 
     for (const target of targets) {
 
-        const { card, owner: targetOwner } = target;
-
-        const currentPower = getPower(card, targetOwner);
+        const currentPower = getPower(target, target.owner);
 
         const missingPower = Math.max(
             0,
-            card.basePower - currentPower
+            target.basePower - currentPower
         );
 
         const healed = Math.min(
@@ -302,13 +304,135 @@ function effectHealPower(effect, sourceCard, context) {
         );
 
         if (healed <= 0) {
-            log(`${card.name} has no power to restore.`);
+            log(`${target.name} has no power to restore.`);
             continue;
         }
 
-        card.powerModifier += healed;
+        target.powerModifier += healed;
 
-        log(`${card.name} recovered ${healed} power.`);
+        log(`${target.name} recovered ${healed} power.`);
+    }
+}
+
+function effectAddCards(effect, sourceCard, context) {
+
+    const targets = selectTargets(
+        effect.target,
+        context
+    );
+
+    for (const target of targets) {
+
+        moveTarget(target, "active", "added");
+
+    }
+
+}
+
+function effectSummonCards(effect, sourceCard, context) {
+
+    function summonCard(cardId, owner) {
+
+        const definition = CARDS[cardId];
+
+        if (!definition) {
+            console.warn("Unknown card ID:", cardId);
+            return false;
+        }
+
+        const card = createCardInstance(definition, owner, "active");
+
+        owner.activeCards.push(card);
+
+        state.playOrder.push({
+            card,
+            owner
+        });
+
+        log(`${card.name} was summoned.`);
+
+
+        // Trigger on-play effects.
+        runCardEffects(card, "on_play", {
+            owner,
+            opponent: getOpponent(owner),
+            sourceCard: card
+        });
+
+        notifyCardPlayed(card, owner);
+
+        return true;
+
+    }
+
+
+    const { owner } = context;
+
+
+    if (effect.source === "specific") {
+
+        for (const cardId of effect.cards || []) {
+
+            summonCard(cardId, owner);
+
+        }
+
+    }
+
+
+    else if (effect.source === "target") {
+
+        const targets = selectTargets(
+            effect.target,
+            context
+        );
+
+        for (const target of targets) {
+
+            summonCard(target.card.id, target.owner);
+
+        }
+
+    }
+
+}
+
+function effectAddPower(effect, sourceCard, context) {
+
+    const targets = selectTargets(
+        effect.target,
+        context
+    );
+
+    for (const target of targets) {
+
+        target.powerModifier += effect.amount;
+
+        log(`${target.name} gained ${effect.amount} power.`);
+
+    }
+
+}
+
+function effectBoostPower(effect, sourceCard, context) {
+
+    const targets = selectTargets(
+        effect.target,
+        context
+    );
+
+    for (const target of targets) {
+
+        if (
+            effect.excludeSelf &&
+            target.instanceId === sourceCard.instanceId
+        ) {
+            continue;
+        }
+
+        target.powerModifier += effect.amount;
+
+        log(`${target.name} gained ${effect.amount} temporary power.`);
 
     }
 
@@ -325,8 +449,11 @@ const EFFECT_HANDLERS = {
     reduce_power: effectReducePower,
     transfer_power: effectTransferPower,
     destroy_card: effectDestroyCard,
-    heal_power: effectHealPower
-
+    heal_power: effectHealPower,
+    add_cards: effectAddCards,
+    summon_cards: effectSummonCards,
+    add_power: effectAddPower,
+    boost_power: effectBoostPower
 };
 
 

@@ -1,37 +1,28 @@
-function getTargetCollection(target) {
+function getTargetCollection(card) {
+    const collections = {
+        hand: card.owner.hand,
+        active: card.owner.activeCards,
+        deck: card.owner.deck,
+        destroyed: card.owner.destroyedCards
+    };
 
-    const { owner, zone } = target;
+    const collection = collections[card.zone];
 
-    switch (zone) {
-
-        case "hand":
-            return owner.hand;
-
-        case "active":
-            return owner.activeCards;
-
-        case "deck":
-            return owner.deck;
-
-        case "destroyed":
-            return owner.destroyedCards;
-
-        default:
-            console.warn("Unknown target zone:", zone);
-            return null;
-
+    if (!collection) {
+        console.warn("Unknown card zone:", card.zone);
+        return null;
     }
 
+    return collection;
 }
 
-function removeTarget(target) {
-
-    const collection = getTargetCollection(target);
+function removeTarget(card) {
+    const collection = getTargetCollection(card);
 
     if (!collection) return false;
 
     const index = collection.findIndex(
-        card => card.instanceId === target.card.instanceId
+        existingCard => existingCard.instanceId === card.instanceId
     );
 
     if (index === -1) return false;
@@ -39,20 +30,19 @@ function removeTarget(target) {
     collection.splice(index, 1);
 
     return true;
-
 }
 
-function moveTarget(target, destination) {
+function moveTarget(card, destination, reason = null) {
 
-    const sourceCollection = getTargetCollection(target);
+    const sourceCollection = getTargetCollection(card);
 
     if (!sourceCollection) return false;
 
     const destinations = {
-        hand: target.owner.hand,
-        active: target.owner.activeCards,
-        deck: target.owner.deck,
-        destroyed: target.owner.destroyedCards
+        hand: card.owner.hand,
+        active: card.owner.activeCards,
+        deck: card.owner.deck,
+        destroyed: card.owner.destroyedCards
     };
 
     const destinationCollection = destinations[destination];
@@ -62,26 +52,46 @@ function moveTarget(target, destination) {
         return false;
     }
 
-    if (target.zone === destination) return false;
+    if (card.zone === destination) return false;
 
     const index = sourceCollection.findIndex(
-        card => card.instanceId === target.card.instanceId
+        existingCard => existingCard.instanceId === card.instanceId
     );
 
     if (index === -1) return false;
 
-    const [card] = sourceCollection.splice(index, 1);
+    // Move card.
+    const [movedCard] = sourceCollection.splice(index, 1);
 
-    destinationCollection.push(card);
+    destinationCollection.push(movedCard);
 
-    target.zone = destination;
+    // Update zone.
+    movedCard.zone = destination;
+
+    // Prepare effect context.
+    const context = {
+        owner: movedCard.owner,
+        opponent: getOpponent(movedCard.owner),
+        sourceCard: movedCard
+    };
+
+    // Trigger destination-related effects.
+    if (destination === "hand" && reason === "draw") {
+        runCardEffects(movedCard, "on_draw", context);
+    }
+
+    if (destination === "active" && reason === "play") {
+        runCardEffects(movedCard, "on_play", context);
+    }
+
+    if (destination === "destroyed" && reason === "destroy") {
+        runCardEffects(movedCard, "on_destroy", context);
+    }
 
     return true;
-
 }
 
 function selectTargets(config, context) {
-
     const { owner, opponent } = context;
 
     const {
@@ -156,11 +166,7 @@ function selectTargets(config, context) {
 
             for (const card of zoneCards) {
 
-                candidates.push({
-                    card,
-                    owner: side,
-                    zone
-                });
+                candidates.push(card);
 
             }
 
@@ -225,7 +231,7 @@ function selectTargets(config, context) {
         for (const candidate of candidates) {
 
             const power = getPower(
-                candidate.card,
+                candidate,
                 candidate.owner
             );
 
@@ -268,8 +274,19 @@ function selectTargets(config, context) {
             }
 
         }
-
+        console.log("Selected targets based on power:", selected);
         return selected;
+
+    }
+
+    if (selection === "top") {
+        return [candidates.slice(0, targetCount).at(0)];
+
+    }
+
+    else if (selection === "bottom") {
+
+        return [candidates.slice(-targetCount).reverse().at(0)];
 
     }
 

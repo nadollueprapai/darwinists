@@ -5,7 +5,23 @@ const CARDS = {
         name: "Scutes",
         cost: 1,
         power: 2,
-        description: "A simple defensive covering."
+        quote: "Maybe one day I'll have a shell, but for now this will have to do."
+    },
+
+    bipedalism: {
+        id: "bipedalism",
+        name: "Bipedalism",
+        cost: 1,
+        power: 2,
+        quote: "A simple locomotion trait."
+    },
+
+    carnivory: {
+        id: "carnivory",
+        name: "Carnivory",
+        cost: 1,
+        power: 2,
+        quote: "I'll stick with this hamburger."
     },
 
     claws: {
@@ -13,7 +29,43 @@ const CARDS = {
         name: "Claws",
         cost: 1,
         power: 3,
-        description: "A cheap trait with reliable power."
+        quote: "Sharp!",
+        description: "On play: Reduce a random enemy card's power by 1.",
+        effects: [
+            {
+                trigger: "on_play",
+                type: "reduce_power",
+                amount: 1,
+                target: {
+                    owner: "enemy",
+                    zones: ["active"],
+                    selection: "random",
+                    count: 1
+                }
+            }
+        ]
+    },
+
+    talons: {
+        id: "talons",
+        name: "Talons",
+        cost: 1,
+        power: 2,
+        quote: "Claws but for birds.",
+        description: "On play: Reduce a random enemy card's power by 2.",
+        effects: [
+            {
+                trigger: "on_play",
+                type: "reduce_power",
+                amount: 2,
+                target: {
+                    owner: "enemy",
+                    zones: ["active"],
+                    selection: "random",
+                    count: 1
+                }
+            }
+        ]
     },
 
     feathers: {
@@ -21,7 +73,7 @@ const CARDS = {
         name: "Feathers",
         cost: 2,
         power: 2,
-        description: "Draw 1 card when played.",
+        quote: "Good for warmth and potentially flight.",
 
         effects: [
             {
@@ -37,7 +89,7 @@ const CARDS = {
         name: "Fangs",
         cost: 2,
         power: 4,
-        description: "A straightforward offensive trait."
+        quote: "Fit for a hunter.",
     },
 
     thick_hide: {
@@ -45,13 +97,18 @@ const CARDS = {
         name: "Thick Hide",
         cost: 2,
         power: 3,
-        description: "This card's power cannot be reduced.",
+        quote: "Those claws are useless.",
+        description: "Your cards in play cannot have their power reduced.",
 
         effects: [
             {
                 trigger: "ongoing",
                 type: "power_protection",
-                target: "self"
+                target: {
+                    owner: "self",
+                    zones: ["active"],
+                    selection: "all"
+                }
             }
         ]
     },
@@ -128,21 +185,20 @@ const CARDS = {
         power: 0,
         description: "Ongoing: Gain 1 power for each other card you played.",
 
-            effects: [
-        {
-            trigger: "ongoing",
-            type: "scale_power",
-            amount: 1,
-
-            countTargets: {
-                owner: "self",
-                zones: ["active"],
-                selection: "all"
-            },
-
-            excludeSelf: true
-        }
-    ]
+        effects: [
+            {
+                trigger: "ongoing",
+                type: "scale_power",
+                amount: 1,
+                scaleType: "target_count",
+                countTargets: {
+                    owner: "self",
+                    zones: ["active"],
+                    selection: "all"
+                },
+                excludeSelf: true
+            }
+        ]
     },
 
     armored_skull: {
@@ -166,7 +222,7 @@ const CARDS = {
         name: "Parasite",
         cost: 4,
         power: 3,
-        description: "On play:Destroy a random unprotected enemy card.",
+        description: "On play: Destroy a random unprotected enemy card.",
 
         effects: [
             {
@@ -187,7 +243,17 @@ const CARDS = {
         name: "Theropod",
         cost: 4,
         power: 7,
-        description: "A powerful trait with no additional effect."
+        quote: "A bundle deal of traits including bipedalism, carnivory, and claws.",
+        description: "...",
+        effects: [
+            {
+                trigger: "on_play",
+                type: "summon_cards",
+                source: "specific",
+                cards: ["bipedalism", "carnivory", "claws"],
+
+            },
+        ]
     },
 
     adaptive_brain: {
@@ -206,24 +272,24 @@ const CARDS = {
         ]
     },
 
-    brain_plus_ultra: {
-        id: "brain_plus_ultra",
-        name: "Brain Plus Ultra",
+    tubular: {
+        id: "tubular",
+        name: "Tubular",
         cost: 1,
         power: 0,
-        description: "Ongoing: Has power equal to the number of cards in both decks.",
+        description: "Ongoing: Has power equal to the number of cards in both hands.",
 
         effects: [
             {
                 trigger: "ongoing",
                 type: "scale_power",
                 amount: 1,
+                scaleType: "target_count",
                 countTargets: {
                     owner: "both",
-                    zones: ["deck"],
+                    zones: ["hand"],
                     selection: "all"
-                },
-                excludeSelf: false
+                }
             }
         ]
     },
@@ -233,21 +299,37 @@ const CARDS = {
         name: "Apex",
         cost: 5,
         power: 0,
-        description: "Ongoing: 3 power for all cards in play.",
+        description: "Ongoing: Gains 3 power for each card that has been played this game.",
         effects: [
-        {
-            trigger: "ongoing",
-            type: "scale_power",
-            amount: 3,
+            {
+                trigger: "ongoing",
+                type: "scale_power",
+                amount: 3,
 
-            countTargets: {
-                owner: "both",
-                zones: ["active"],
-                selection: "all"
-            },
-
-            excludeSelf: false
-        }
-    ]
+                scaleType: "stat_count",
+                stat: "totalCardsPlayed"
+            }
+        ]
+    },
+    mimic: {
+        id: "mimic",
+        name: "Mimic",
+        cost: 4,
+        power: 0,
+        description: "Ongoing: Has power equal to the highest power of all cards in play.",
+        effects: [
+            {
+                trigger: "ongoing",
+                type: "scale_power",
+                amount: 1,
+                scaleType: "target_power",
+                countTargets: {
+                    owner: "both",
+                    zones: ["active"],
+                    selection: "highest_power",
+                },
+                excludeSelf: true
+            }
+        ]
     },
 };

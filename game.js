@@ -48,30 +48,22 @@ const elements = {
 // ==================================================
 
 
-function createCardInstance(definition) {
+function createCardInstance(definition, owner, zone = "deck") {
     return {
         instanceId: nextInstanceId++,
-
         id: definition.id,
         name: definition.name,
-
         cost: definition.cost,
-
         basePower: definition.power,
-
-        // Temporary power changes are stored here.
         powerModifier: 0,
-
-        description: definition.description,
-
-        effects: (definition.effects || []).map(
-            effect => ({ ...effect })
-        )
-
+        powerBoost: 0,
+        quote: definition.quote ? definition.quote : "",
+        description: definition.description ? definition.description : "No description.",
+        effects: (definition.effects || []).map(effect => ({ ...effect })),
+        zone: zone,
+        owner: owner,
     };
-
 }
-
 
 function shuffle(array) {
 
@@ -89,43 +81,54 @@ function shuffle(array) {
 
 }
 
-function createStarterDeck() {
+function createDeck(owner) {
     return shuffle(
-        Object.keys(CARDS).flatMap(cardId => [
-            createCardInstance(CARDS[cardId]),
-        ])
+        Object.keys(CARDS).map(cardId => {
+                return createCardInstance(CARDS[cardId], owner, "deck");
+            }
+        )   
     );
 }
 
 function createSide(name) {
-    return {
+    const side = {
         name,
-
-        deck: createStarterDeck(),
-
+        deck: [],
         hand: [],
         activeCards: [],
         destroyedCards: [],
         energy: 0
     };
+
+    side.deck = createDeck(side);
+
+    return side;
 }
 
 function drawCards(owner, amount) {
-
-    for (let i = 0; i < amount; i++) {
-
-        if (owner.deck.length === 0) {
-            break;
+    const card = selectTargets(
+        {
+            owner: "self",
+            zones: ["deck"],
+            selection: "top",
+            count: 1
+        },
+        {
+            owner,
+            opponent: getOpponent(owner)
         }
+    )[0];
 
-        const card = owner.deck.pop();
+    if (!card) { return };
 
-        owner.hand.push(card);
-
+    if (moveTarget(card, "hand", "draw")) {
+        if (owner === state.player) {
+            state.stats.playerCardsDrawn++;
+        } else {
+            state.stats.enemyCardsDrawn++;
+        }
     }
-
 }
-
 // ==================================================
 // PLAYER AND OPPONENT REFERENCES
 // ==================================================
@@ -187,6 +190,10 @@ function createBattle() {
         stats: {
             playerCardsPlayed: 0,
             enemyCardsPlayed: 0,
+
+            playerCardsDrawn: 0,
+            enemyCardsDrawn: 0,
+
             totalCardsPlayed: 0
         },
 
@@ -253,17 +260,10 @@ function playCard(owner, handIndex) {
         return false;
     }
 
-
-    // Remove card from hand.
-    owner.hand.splice(handIndex, 1);
-
-
     // Pay energy cost.
     owner.energy -= card.cost;
 
-
-    // Add card to active board.
-    owner.activeCards.push(card);
+    moveTarget(card, "active", "play");
 
     state.playOrder.push({
         card,
@@ -282,18 +282,6 @@ function playCard(owner, handIndex) {
     log(
         `${owner.name} played ${card.name} (cost ${card.cost}, power ${card.basePower}).`
     );
-
-
-    // Activate the card's own on_play effects.
-    runCardEffects(card, "on_play", {
-
-        owner,
-
-        opponent: getOpponent(owner),
-
-        sourceCard: card
-
-    });
 
 
     // Notify other active cards that a card was played.
@@ -601,8 +589,8 @@ function cardMarkup(card, owner, options = {}) {
                 ${escapeHtml(card.name)}
             </span>
 
-            <span class="card-description">
-                ${escapeHtml(card.quote || "\"-\"")}
+            <span class="card-quote">
+                ${escapeHtml(`"${card.quote}"`) || "\"-\""}
             </span>
 
             <span class="card-description">
