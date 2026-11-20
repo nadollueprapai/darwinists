@@ -100,11 +100,13 @@ function getTotalPower(owner) {
 // ==================================================
 
 function hasProtection(card, protectionType) {
-
-    const protectionEffects = card.effects.filter(effect =>
+    const protectionEffects = []
+    
+    card.owner.activeCards.forEach(activeCard => {
+        protectionEffects.push(...activeCard.effects.filter(effect =>
         effect.trigger === "ongoing" &&
-        effect.type === protectionType
-    );
+        effect.type === protectionType));
+    });
 
     for (const effect of protectionEffects) {
 
@@ -203,9 +205,11 @@ function effectReducePower(effect, sourceCard, context) {
 
     for (const target of targets) {
 
-        if (isProtectedFromReduction(target, target.owner)) {
+        if (isProtectedFromReduction(target)) {
             log(`${target.name} resisted the power reduction.`);
             continue;
+        } else {
+            log(`${target.name} does not have power reduction protection.`)
         }
 
         const amount = Math.min(
@@ -215,7 +219,7 @@ function effectReducePower(effect, sourceCard, context) {
 
         target.powerModifier -= amount;
 
-        log(`${target.name} lost ${amount} power.`);
+        log(`${target.name} lost ${amount} power because of ${sourceCard.name}.`);
     }
 }
 

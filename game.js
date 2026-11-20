@@ -6,7 +6,7 @@ let nextInstanceId = 1;
 let state = null;
 
 const STARTING_HAND_SIZE = 3;
-const MAX_TURNS = 5;
+const MAX_TURNS = 10;
 
 // ==================================================
 // HTML REFERENCES

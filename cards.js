@@ -134,6 +134,27 @@ const CARDS = {
         ]
     },
 
+    cooker: {
+        id: "cooker",
+        name: "Cooker",
+        cost: 2,
+        power: 1,
+        description: "End of turn: Reduce your opponent's cards power by 1.",
+
+        effects: [
+            {
+                trigger: "on_turn_end",
+                type: "reduce_power",
+                target: {
+                    owner: "enemy",
+                    zones: ["active"],
+                    selection: "all"
+                },
+                amount: 1
+            }
+        ]
+    },
+
     venom: {
         id: "venom",
         name: "Venom",
@@ -201,9 +222,9 @@ const CARDS = {
         ]
     },
 
-    armored_skull: {
-        id: "armored_skull",
-        name: "Armored Skull",
+    metallic: {
+        id: "metallic",
+        name: "Metallic",
         cost: 3,
         power: 4,
         description: "This card cannot be destroyed.",
